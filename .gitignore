@@ -1,0 +1,7 @@
+__pycache__/
+*.db
+*.png
+.DS_Store
+venv/
+env/
+solsearch_export.csv
