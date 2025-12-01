@@ -9,7 +9,7 @@
   \__ \/ __ \/ /\__ \/ _ \/ __ `/ ___/ ___/ __ \   
  ___/ / /_/ / /___/ /  __/ /_/ / /  / /__/ / / /   
 /____/\____/_//____/\___/\__,_/_/   \___/_/ /_/    
-        :: Career Tracking System v2.0 ::          
+        :: Career Tracking System v1.0 ::          
   </pre>
 
   <h3 align="center">SolSearch</h3>
