@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timedelta
 
 DB_NAME = "solsearch.db"
-NUM_ENTRIES = 50  
+NUM_ENTRIES = 1000  
 
 # Sample data pools
 COMPANIES = [

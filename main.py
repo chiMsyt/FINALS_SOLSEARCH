@@ -1,25 +1,31 @@
-"""
-PROJECT: SolSearch - Job Application Tracker
-AUTHOR: Tim
-COURSE: DSA 214
-DESCRIPTION: CLI tool to track job applications, status updates, and analytics 
-using an SQLite database.
-"""
-
 import sqlite3
-import sys
-import os
-import csv
-import statistics
+import tkinter as tk
+from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from datetime import datetime
+import sys
 
 DB_NAME = "solsearch.db"
 VALID_STATUSES = ["Applied", "Interview", "Rejected", "Offer"]
 
+"""
+TODO: Implement back export .csv, data analysis, and better data visualization features.
+"""
+
+LOGO_TEXT = r"""
+   _____       __ _____                     __     
+  / ___/____  / // ___/___  ____ __________/ /_    
+  \__ \/ __ \/ /\__ \/ _ \/ __ `/ ___/ ___/ __ \   
+ ___/ / /_/ / /___/ /  __/ /_/ / /  / /__/ / / /   
+/____/\____/_//____/\___/\__,_/_/   \___/_/ /_/    
+        :: Career Tracking System v2.0 ::          
+"""
+
+# ==========================================
+# DATABASE MANAGER
+# ==========================================
 class DatabaseManager:
-    """Handles all direct interactions with the SQLite database."""
-    
     def __init__(self, db_name):
         self.db_name = db_name
         self.initialize_db()
@@ -28,7 +34,6 @@ class DatabaseManager:
         return sqlite3.connect(self.db_name)
 
     def initialize_db(self):
-        """Creates the applications table if it doesn't exist."""
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('''
@@ -45,10 +50,6 @@ class DatabaseManager:
         conn.close()
 
     def execute_write(self, query, params=()):
-        """
-        Executes INSERT, UPDATE, or DELETE queries.
-        Returns the number of rows affected.
-        """
         conn = self.get_connection()
         cursor = conn.cursor()
         try:
@@ -56,13 +57,12 @@ class DatabaseManager:
             conn.commit()
             return cursor.rowcount
         except sqlite3.Error as e:
-            print(f"Database Error: {e}")
+            messagebox.showerror("Database Error", str(e))
             return 0
         finally:
             conn.close()
 
     def fetch_all(self, query, params=()):
-        """Executes SELECT queries and returns all rows."""
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute(query, params)
@@ -70,258 +70,308 @@ class DatabaseManager:
         conn.close()
         return rows
 
-class AnalyticsEngine:
-    """Handles data processing, statistics calculations, and exports."""
-    
-    def __init__(self, db_manager):
-        self.db = db_manager
-
-    def generate_funnel_report(self):
-        """Prints a breakdown of applications by status."""
-        rows = self.db.fetch_all("SELECT status, COUNT(*) FROM applications GROUP BY status")
-        total_apps = sum(row[1] for row in rows)
+# ==========================================
+# GUI APPLICATION
+# ==========================================
+class SolSearchApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.db = DatabaseManager(DB_NAME)
         
-        print("\n📊 --- FUNNEL ANALYSIS ---")
-        if total_apps == 0:
-            print("No data available.")
+        self.title("SolSearch - Job Application Tracker")
+        self.geometry("1100x850") 
+        
+        # Handle the "X" button click to ensure terminal is freed
+        self.protocol("WM_DELETE_WINDOW", self.close_app)
+        
+        style = ttk.Style(self)
+        style.theme_use('clam')
+
+        # --- HEADER (ASCII LOGO + EXIT BUTTON) ---
+        header_frame = tk.Frame(self, bg="#2c3e50", height=150)
+        header_frame.pack(fill="x")
+        
+        # Grid layout for header
+        header_frame.columnconfigure(0, weight=1) # Center spacer
+        header_frame.columnconfigure(1, weight=0) # Button column
+        
+        lbl_logo = tk.Label(
+            header_frame, 
+            text=LOGO_TEXT, 
+            font=("Courier", 10, "bold"), 
+            fg="white", 
+            bg="#2c3e50",
+            justify="left"
+        )
+        lbl_logo.pack(side="left", padx=20, pady=10)
+
+        # EXIT BUTTON (Standard ASCII Text)
+        btn_exit = tk.Button(
+            header_frame, 
+            text="[X] EXIT APP", 
+            font=("Arial", 10, "bold"),
+            bg="#c0392b", # Red
+            fg="white",
+            activebackground="#e74c3c",
+            activeforeground="white",
+            command=self.close_app,
+            width=12,
+            height=2
+        )
+        btn_exit.pack(side="right", padx=20, pady=10)
+        
+        # --- TABS ---
+        self.tabs = ttk.Notebook(self)
+        self.tabs.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Tab 1: Dashboard
+        self.tab_dashboard = ttk.Frame(self.tabs)
+        self.tabs.add(self.tab_dashboard, text="Dashboard")
+        self.setup_dashboard()
+
+        # Tab 2: List
+        self.tab_list = ttk.Frame(self.tabs)
+        self.tabs.add(self.tab_list, text="Applications List")
+        self.setup_list_view()
+
+        # Tab 3: Add
+        self.tab_add = ttk.Frame(self.tabs)
+        self.tabs.add(self.tab_add, text="Add New")
+        self.setup_add_form()
+
+        # Hook tab change
+        self.tabs.bind("<<NotebookTabChanged>>", self.on_tab_change)
+
+    # -----------------------------------------------------------
+    # SYSTEM UTILS (Exit Logic)
+    # -----------------------------------------------------------
+    def close_app(self):
+        """Properly closes the GUI and kills the terminal process."""
+        if messagebox.askokcancel("Exit", "Close SolSearch?"):
+            plt.close('all')  # Close any lingering Matplotlib figures
+            self.quit()       # Stop mainloop
+            self.destroy()    # Destroy window
+            sys.exit()        # Kill Python process to free terminal
+
+    # -----------------------------------------------------------
+    # TAB 1: DASHBOARD
+    # -----------------------------------------------------------
+    def setup_dashboard(self):
+        self.stats_frame = ttk.Frame(self.tab_dashboard)
+        self.stats_frame.pack(fill="x", pady=10, padx=10)
+        
+        self.lbl_total = ttk.Label(self.stats_frame, text="Total: 0", font=("Arial", 12, "bold"))
+        self.lbl_total.pack(side="left", padx=20)
+        
+        self.lbl_active = ttk.Label(self.stats_frame, text="Interviews: 0", font=("Arial", 12, "bold"), foreground="blue")
+        self.lbl_active.pack(side="left", padx=20)
+        
+        self.lbl_offers = ttk.Label(self.stats_frame, text="Offers: 0", font=("Arial", 12, "bold"), foreground="green")
+        self.lbl_offers.pack(side="left", padx=20)
+
+        self.chart_frame = ttk.Frame(self.tab_dashboard)
+        self.chart_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        self.canvas = None
+
+    def refresh_dashboard(self):
+        rows = self.db.fetch_all("SELECT status FROM applications")
+        total = len(rows)
+        interviews = sum(1 for r in rows if r[0] == "Interview")
+        offers = sum(1 for r in rows if r[0] == "Offer")
+
+        self.lbl_total.config(text=f"Total Apps: {total}")
+        self.lbl_active.config(text=f"Interviews: {interviews}")
+        self.lbl_offers.config(text=f"Offers: {offers}")
+
+        if self.canvas:
+            self.canvas.get_tk_widget().destroy()
+
+        if total == 0:
+            lbl = ttk.Label(self.chart_frame, text="No data available.")
+            lbl.pack()
             return
 
-        for status, count in rows:
-            pct = (count / total_apps) * 100
-            print(f" > {status:<15}: {count} ({pct:.1f}%)")
-
-    def priority_stats(self):
-        """Calculates mean and median priority scores."""
-        rows = self.db.fetch_all("SELECT priority FROM applications")
-        if not rows: return
-
-        # Extract priorities into a list
-        priorities = [r[0] for r in rows]
+        status_counts = {}
+        for r in rows:
+            status_counts[r[0]] = status_counts.get(r[0], 0) + 1
         
-        print("\n🎯 --- PRIORITY ALIGNMENT ---")
-        print(f" > Total Apps:      {len(priorities)}")
-        print(f" > Average Score:   {statistics.mean(priorities):.2f} / 5.0")
-        print(f" > Median Score:    {statistics.median(priorities):.2f} / 5.0")
+        statuses = list(status_counts.keys())
+        counts = list(status_counts.values())
 
-    def generate_chart(self):
-        """Generates and saves a bar chart of application statuses."""
-        rows = self.db.fetch_all("SELECT status, COUNT(*) FROM applications GROUP BY status")
-        if not rows:
-            print("Not enough data for chart.")
+        fig, ax = plt.subplots(figsize=(6, 4), dpi=100)
+        colors = ['#3498db', '#f1c40f', '#e74c3c', '#2ecc71']
+        bars = ax.bar(statuses, counts, color=colors[:len(statuses)])
+        
+        ax.set_title("Application Funnel")
+        ax.set_ylabel("Count")
+        ax.grid(axis='y', linestyle='--', alpha=0.5)
+
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{int(height)}', ha='center', va='bottom')
+
+        self.canvas = FigureCanvasTkAgg(fig, master=self.chart_frame)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(fill="both", expand=True)
+
+    # -----------------------------------------------------------
+    # TAB 2: LIST VIEW (With Sorting)
+    # -----------------------------------------------------------
+    def setup_list_view(self):
+        controls_frame = ttk.Frame(self.tab_list)
+        controls_frame.pack(fill="x", padx=10, pady=5)
+
+        ttk.Button(controls_frame, text="Refresh", command=self.refresh_list).pack(side="left", padx=5)
+        ttk.Button(controls_frame, text="Update Status", command=self.update_selected_status).pack(side="left", padx=5)
+        ttk.Button(controls_frame, text="Delete Selected", command=self.delete_selected).pack(side="left", padx=5)
+
+        ttk.Label(controls_frame, text="Sort By:").pack(side="left", padx=(20, 5))
+        
+        self.sort_options = {
+            "ID (Newest First)": "id DESC",
+            "ID (Oldest First)": "id ASC",
+            "Company (A-Z)": "company ASC",
+            "Status (A-Z)": "status ASC",
+            "Priority (High-Low)": "priority DESC",
+            "Priority (Low-High)": "priority ASC"
+        }
+        
+        self.sort_var = tk.StringVar()
+        self.combo_sort = ttk.Combobox(controls_frame, textvariable=self.sort_var, values=list(self.sort_options.keys()), state="readonly", width=20)
+        self.combo_sort.current(0)
+        self.combo_sort.pack(side="left")
+        
+        self.combo_sort.bind("<<ComboboxSelected>>", lambda e: self.refresh_list())
+
+        columns = ("ID", "Company", "Role", "Date", "Status", "Priority")
+        self.tree = ttk.Treeview(self.tab_list, columns=columns, show="headings", selectmode="browse")
+        
+        for col in columns:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=100 if col == "ID" else 150)
+
+        scrollbar = ttk.Scrollbar(self.tab_list, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+        
+        scrollbar.pack(side="right", fill="y")
+        self.tree.pack(fill="both", expand=True, padx=10, pady=5)
+
+    def refresh_list(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        selected_sort = self.sort_var.get()
+        order_clause = self.sort_options.get(selected_sort, "id DESC")
+        
+        query = f"SELECT * FROM applications ORDER BY {order_clause}"
+        rows = self.db.fetch_all(query)
+        
+        for row in rows:
+            display_row = list(row)
+            display_row[5] = "*" * int(row[5])
+            self.tree.insert("", "end", values=display_row)
+
+    def get_selected_id(self):
+        selected_item = self.tree.selection()
+        if not selected_item:
+            messagebox.showwarning("Selection Error", "Please select a row first.")
+            return None
+        return self.tree.item(selected_item)['values'][0]
+
+    def delete_selected(self):
+        app_id = self.get_selected_id()
+        if app_id:
+            confirm = messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete ID {app_id}?")
+            if confirm:
+                self.db.execute_write("DELETE FROM applications WHERE id = ?", (app_id,))
+                self.refresh_list()
+                messagebox.showinfo("Deleted", "Application deleted.")
+
+    def update_selected_status(self):
+        app_id = self.get_selected_id()
+        if not app_id:
             return
 
-        statuses = [row[0] for row in rows]
-        counts = [row[1] for row in rows]
+        popup = tk.Toplevel(self)
+        popup.title(f"Update ID {app_id}")
+        popup.geometry("300x150")
 
-        try:
-            plt.figure(figsize=(8, 5))
-            # Standard colors
-            colors = ['#3498db', '#f1c40f', '#e74c3c', '#2ecc71', '#9b59b6'] 
-            plt.bar(statuses, counts, color=colors[:len(statuses)])
-            plt.title("Application Status Distribution")
-            plt.xlabel("Status")
-            plt.ylabel("Count")
-            plt.grid(axis='y', linestyle='--', alpha=0.7)
-            
-            filename = "solsearch_analytics.png"
-            plt.savefig(filename)
-            plt.close()
-            print(f"\n✅ Chart saved as '{filename}'")
-        except Exception as e:
-            print(f"Error generating chart: {e}")
-
-    def export_to_csv(self):
-        """Dumps database contents to a CSV file."""
-        rows = self.db.fetch_all("SELECT * FROM applications")
-        filename = "solsearch_export.csv"
+        ttk.Label(popup, text="Select New Status:").pack(pady=10)
         
-        try:
-            with open(filename, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(["ID", "Company", "Role", "Date Applied", "Status", "Priority"])
-                writer.writerows(rows)
-            print(f"\n✅ Data exported to '{filename}'")
-        except Exception as e:
-            print(f"Error exporting data: {e}")
+        status_var = tk.StringVar()
+        combo = ttk.Combobox(popup, textvariable=status_var, values=VALID_STATUSES, state="readonly")
+        combo.pack(pady=5)
+        combo.current(0)
 
-class UserInterface:
-    """Handles formatted output and validates user input."""
-    
-    def clear_screen(self):
-        os.system('cls' if os.name == 'nt' else 'clear')
+        def save_update():
+            new_status = status_var.get()
+            self.db.execute_write("UPDATE applications SET status = ? WHERE id = ?", (new_status, app_id))
+            self.refresh_list()
+            popup.destroy()
+            messagebox.showinfo("Success", "Status updated.")
 
-    def print_banner(self):
-        print(r"""
-   _____       __ _____                     __     
-  / ___/____  / // ___/___  ____ __________/ /_    
-  \__ \/ __ \/ /\__ \/ _ \/ __ `/ ___/ ___/ __ \   
- ___/ / /_/ / /___/ /  __/ /_/ / /  / /__/ / / /   
-/____/\____/_//____/\___/\__,_/_/   \___/_/ /_/    
-        :: Career Tracking System v1.0 ::          
-        """)
+        ttk.Button(popup, text="Save", command=save_update).pack(pady=10)
 
-    def format_cell(self, text, width):
-        """Truncates text to fit table cells."""
-        text = str(text)
-        if len(text) > width:
-            return text[:width-3] + "..."
-        return text
+    # -----------------------------------------------------------
+    # TAB 3: ADD FORM
+    # -----------------------------------------------------------
+    def setup_add_form(self):
+        form_frame = ttk.Frame(self.tab_add, padding=20)
+        form_frame.pack(fill="both")
 
-    def stars(self, priority):
-        """Converts integer priority to star string."""
-        return "⭐" * priority
+        def create_field(label_text, row):
+            ttk.Label(form_frame, text=label_text).grid(row=row, column=0, sticky="w", pady=5)
+            entry = ttk.Entry(form_frame, width=30)
+            entry.grid(row=row, column=1, sticky="w", pady=5)
+            return entry
 
-    def pause(self):
-        input("\nPress [Enter] to return to menu...")
-
-    def get_valid_string(self, prompt):
-        while True:
-            s = input(prompt).strip()
-            if s: return s
-            print("Error: Input cannot be empty.")
-
-    def get_valid_priority(self):
-        while True:
-            try:
-                val = int(input("Priority (1-5): "))
-                if 1 <= val <= 5: return val
-                print("Error: Enter a number between 1 and 5.")
-            except ValueError:
-                print("Error: Invalid input.")
-
-    def get_valid_date(self):
-        while True:
-            d = input("Date Applied (YYYY-MM-DD): ").strip()
-            try:
-                datetime.strptime(d, "%Y-%m-%d")
-                return d
-            except ValueError:
-                print("Error: Invalid format. Use YYYY-MM-DD.")
-
-    def get_valid_status(self):
-        print(f"Options: {' / '.join(VALID_STATUSES)}")
-        while True:
-            s = input("Status: ").strip().title()
-            if s in VALID_STATUSES: return s
-            print("Error: Invalid Status.")
-
-def main():
-    db = DatabaseManager(DB_NAME)
-    analytics = AnalyticsEngine(db)
-    ui = UserInterface()
-
-    while True:
-        ui.clear_screen()
-        ui.print_banner()
+        self.ent_company = create_field("Company:", 0)
+        self.ent_role = create_field("Role:", 1)
         
-        print("1. Add New Application")
-        print("2. View History")
-        print("3. Update Status")
-        print("4. Delete Entry")
-        print("5. Analytics Dashboard")
-        print("6. Export to CSV")
-        print("7. Exit")
-        print("-" * 40)
+        self.ent_date = create_field("Date (YYYY-MM-DD):", 2)
+        self.ent_date.insert(0, datetime.now().strftime("%Y-%m-%d"))
 
-        choice = input("Select Option: ")
+        ttk.Label(form_frame, text="Status:").grid(row=3, column=0, sticky="w", pady=5)
+        self.combo_status = ttk.Combobox(form_frame, values=VALID_STATUSES, state="readonly")
+        self.combo_status.current(0)
+        self.combo_status.grid(row=3, column=1, sticky="w", pady=5)
 
-        if choice == '1':
-            print("\n--- ADD NEW APPLICATION ---")
-            company = ui.get_valid_string("Company Name: ")
-            role = ui.get_valid_string("Role Title: ")
-            date = ui.get_valid_date()
-            status = ui.get_valid_status()
-            priority = ui.get_valid_priority()
-            
-            sql = "INSERT INTO applications (company, role, date_applied, status, priority) VALUES (?, ?, ?, ?, ?)"
-            if db.execute_write(sql, (company, role, date, status, priority)) > 0:
-                print("✅ Application logged.")
-            ui.pause()
+        ttk.Label(form_frame, text="Priority (1-5):").grid(row=4, column=0, sticky="w", pady=5)
+        self.scale_priority = tk.Scale(form_frame, from_=1, to=5, orient="horizontal")
+        self.scale_priority.set(3)
+        self.scale_priority.grid(row=4, column=1, sticky="w", pady=5)
 
-        elif choice == '2':
-            ui.clear_screen()
-            ui.print_banner()
-            print("\n--- APPLICATION HISTORY ---")
-            print("Sort by: [1] ID  [2] Company  [3] Status  [4] Priority")
-            sort_choice = input("Choice: ").strip()
-            
-            sort_map = {
-                '1': "id ASC",
-                '2': "company ASC",
-                '3': "status ASC",
-                '4': "priority DESC"
-            }
-            order_clause = sort_map.get(sort_choice, "id ASC")
-            
-            rows = db.fetch_all(f"SELECT * FROM applications ORDER BY {order_clause}")
-            
-            print(f"{'ID':<4} {'Company':<18} {'Role':<18} {'Date':<12} {'Status':<10} {'Priority':<10}")
-            print("=" * 78)
-            
-            if not rows:
-                print("No records found.")
-            else:
-                for r in rows:
-                    c_comp = ui.format_cell(r[1], 18)
-                    c_role = ui.format_cell(r[2], 18)
-                    c_stars = ui.stars(r[5]) 
-                    print(f"{r[0]:<4} {c_comp:<18} {c_role:<18} {r[3]:<12} {r[4]:<10} {c_stars:<10}")
-            ui.pause()
+        ttk.Button(form_frame, text="Save Application", command=self.save_application).grid(row=5, column=1, sticky="e", pady=20)
 
-        elif choice == '3':
-            print("\n--- UPDATE STATUS ---")
-            rows = db.fetch_all("SELECT id, company, role, status FROM applications")
-            for r in rows:
-                print(f"ID: {r[0]} | {r[1]} ({r[3]})")
-            print("-" * 30)
-            
-            try:
-                app_id = int(input("Enter ID to update: "))
-                new_status = ui.get_valid_status()
-                sql = "UPDATE applications SET status = ? WHERE id = ?"
-                if db.execute_write(sql, (new_status, app_id)) > 0:
-                    print("✅ Status updated.")
-                else:
-                    print("❌ ID not found.")
-            except ValueError:
-                print("Error: ID must be a number.")
-            ui.pause()
+    def save_application(self):
+        company = self.ent_company.get().strip()
+        role = self.ent_role.get().strip()
+        date = self.ent_date.get().strip()
+        status = self.combo_status.get()
+        priority = self.scale_priority.get()
 
-        elif choice == '4':
-            print("\n--- DELETE ENTRY ---")
-            try:
-                app_id = int(input("Enter ID to DELETE: "))
-                confirm = input(f"Delete ID {app_id}? (yes/no): ").lower()
-                if confirm == 'yes':
-                    sql = "DELETE FROM applications WHERE id = ?"
-                    if db.execute_write(sql, (app_id,)) > 0:
-                        print("🗑️ Application deleted.")
-                    else:
-                        print("❌ ID not found.")
-                else:
-                    print("Cancelled.")
-            except ValueError:
-                print("Error: ID must be a number.")
-            ui.pause()
+        if not company or not role:
+            messagebox.showerror("Error", "Company and Role are required.")
+            return
 
-        elif choice == '5':
-            ui.clear_screen()
-            ui.print_banner()
-            analytics.generate_funnel_report()
-            analytics.priority_stats()
-            analytics.generate_chart()
-            ui.pause()
-            
-        elif choice == '6':
-            analytics.export_to_csv()
-            ui.pause()
+        sql = "INSERT INTO applications (company, role, date_applied, status, priority) VALUES (?, ?, ?, ?, ?)"
+        self.db.execute_write(sql, (company, role, date, status, priority))
+        
+        messagebox.showinfo("Success", "Application Logged!")
+        self.ent_company.delete(0, tk.END)
+        self.ent_role.delete(0, tk.END)
 
-        elif choice == '7':
-            print("\nGoodbye!")
-            break
-        else:
-            print("Invalid option.")
-            ui.pause()
+    def on_tab_change(self, event):
+        selected_tab = event.widget.select()
+        tab_text = event.widget.tab(selected_tab, "text")
+
+        if "Dashboard" in tab_text:
+            self.refresh_dashboard()
+        elif "List" in tab_text:
+            self.refresh_list()
 
 if __name__ == "__main__":
-    main()
+    app = SolSearchApp()
+    app.mainloop()
