@@ -1,17 +1,14 @@
 import sqlite3
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from datetime import datetime
 import sys
+import csv
 
 DB_NAME = "solsearch.db"
 VALID_STATUSES = ["Applied", "Interview", "Rejected", "Offer"]
-
-"""
-TODO: Implement back export .csv, data analysis, and better data visualization features.
-"""
 
 LOGO_TEXT = r"""
    _____       __ _____                     __     
@@ -78,22 +75,19 @@ class SolSearchApp(tk.Tk):
         super().__init__()
         self.db = DatabaseManager(DB_NAME)
         
-        self.title("SolSearch - Job Application Tracker")
-        self.geometry("1100x850") 
+        self.title("SolSearch - Job Application Tracker v2.0")
+        self.geometry("1200x900") 
         
-        # Handle the "X" button click to ensure terminal is freed
         self.protocol("WM_DELETE_WINDOW", self.close_app)
         
         style = ttk.Style(self)
         style.theme_use('clam')
 
-        # --- HEADER (ASCII LOGO + EXIT BUTTON) ---
-        header_frame = tk.Frame(self, bg="#2c3e50", height=150)
+        # --- HEADER (ASCII LOGO + BUTTONS) ---
+        header_frame = tk.Frame(self, bg="#2c3e50", height=160)
         header_frame.pack(fill="x")
         
-        # Grid layout for header
         header_frame.columnconfigure(0, weight=1) # Center spacer
-        header_frame.columnconfigure(1, weight=0) # Button column
         
         lbl_logo = tk.Label(
             header_frame, 
@@ -105,9 +99,28 @@ class SolSearchApp(tk.Tk):
         )
         lbl_logo.pack(side="left", padx=20, pady=10)
 
-        # EXIT BUTTON (Standard ASCII Text)
+        # BUTTON CONTAINER
+        btn_container = tk.Frame(header_frame, bg="#2c3e50")
+        btn_container.pack(side="right", padx=20, pady=10)
+
+        # EXPORT BUTTON
+        btn_export = tk.Button(
+            btn_container,
+            text="[V] EXPORT CSV",
+            font=("Arial", 10, "bold"),
+            bg="#27ae60", # Green
+            fg="white",
+            activebackground="#2ecc71",
+            activeforeground="white",
+            command=self.export_to_csv,
+            width=15,
+            height=2
+        )
+        btn_export.pack(side="left", padx=5)
+
+        # EXIT BUTTON
         btn_exit = tk.Button(
-            header_frame, 
+            btn_container, 
             text="[X] EXIT APP", 
             font=("Arial", 10, "bold"),
             bg="#c0392b", # Red
@@ -115,10 +128,10 @@ class SolSearchApp(tk.Tk):
             activebackground="#e74c3c",
             activeforeground="white",
             command=self.close_app,
-            width=12,
+            width=15,
             height=2
         )
-        btn_exit.pack(side="right", padx=20, pady=10)
+        btn_exit.pack(side="left", padx=5)
         
         # --- TABS ---
         self.tabs = ttk.Notebook(self)
@@ -143,81 +156,138 @@ class SolSearchApp(tk.Tk):
         self.tabs.bind("<<NotebookTabChanged>>", self.on_tab_change)
 
     # -----------------------------------------------------------
-    # SYSTEM UTILS (Exit Logic)
+    # SYSTEM UTILS
     # -----------------------------------------------------------
     def close_app(self):
-        """Properly closes the GUI and kills the terminal process."""
         if messagebox.askokcancel("Exit", "Close SolSearch?"):
-            plt.close('all')  # Close any lingering Matplotlib figures
-            self.quit()       # Stop mainloop
-            self.destroy()    # Destroy window
-            sys.exit()        # Kill Python process to free terminal
+            plt.close('all')
+            self.quit()
+            self.destroy()
+            sys.exit()
+
+    def export_to_csv(self):
+        rows = self.db.fetch_all("SELECT * FROM applications")
+        if not rows:
+            messagebox.showwarning("Export", "No data to export.")
+            return
+
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+            title="Save Export"
+        )
+
+        if file_path:
+            try:
+                with open(file_path, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["ID", "Company", "Role", "Date Applied", "Status", "Priority"])
+                    writer.writerows(rows)
+                messagebox.showinfo("Success", f"Data exported to:\n{file_path}")
+            except Exception as e:
+                messagebox.showerror("Export Error", str(e))
 
     # -----------------------------------------------------------
-    # TAB 1: DASHBOARD
+    # TAB 1: DASHBOARD (Enhanced)
     # -----------------------------------------------------------
     def setup_dashboard(self):
+        # Text Stats Frame
         self.stats_frame = ttk.Frame(self.tab_dashboard)
-        self.stats_frame.pack(fill="x", pady=10, padx=10)
+        self.stats_frame.pack(fill="x", pady=15, padx=10)
         
-        self.lbl_total = ttk.Label(self.stats_frame, text="Total: 0", font=("Arial", 12, "bold"))
-        self.lbl_total.pack(side="left", padx=20)
-        
-        self.lbl_active = ttk.Label(self.stats_frame, text="Interviews: 0", font=("Arial", 12, "bold"), foreground="blue")
-        self.lbl_active.pack(side="left", padx=20)
-        
-        self.lbl_offers = ttk.Label(self.stats_frame, text="Offers: 0", font=("Arial", 12, "bold"), foreground="green")
-        self.lbl_offers.pack(side="left", padx=20)
+        # Helper for styled labels
+        def make_stat_label(parent, text, color="black"):
+            lbl = ttk.Label(parent, text=text, font=("Arial", 12, "bold"), foreground=color)
+            lbl.pack(side="left", padx=15)
+            return lbl
 
+        self.lbl_total = make_stat_label(self.stats_frame, "Total: 0")
+        self.lbl_active = make_stat_label(self.stats_frame, "Interviews: 0", "#2980b9") # Blue
+        self.lbl_offers = make_stat_label(self.stats_frame, "Offers: 0", "#27ae60")    # Green
+        self.lbl_rates = make_stat_label(self.stats_frame, "Response Rate: 0%", "#8e44ad") # Purple
+
+        # Chart Frame (Holds Matplotlib canvas)
         self.chart_frame = ttk.Frame(self.tab_dashboard)
-        self.chart_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        self.chart_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
         self.canvas = None
 
     def refresh_dashboard(self):
-        rows = self.db.fetch_all("SELECT status FROM applications")
+        rows = self.db.fetch_all("SELECT status, priority FROM applications")
         total = len(rows)
-        interviews = sum(1 for r in rows if r[0] == "Interview")
-        offers = sum(1 for r in rows if r[0] == "Offer")
+        
+        if total == 0:
+            self.lbl_total.config(text="Total Apps: 0")
+            if self.canvas: self.canvas.get_tk_widget().destroy()
+            return
 
-        self.lbl_total.config(text=f"Total Apps: {total}")
-        self.lbl_active.config(text=f"Interviews: {interviews}")
-        self.lbl_offers.config(text=f"Offers: {offers}")
+        # --- DATA PROCESSING ---
+        statuses = [r[0] for r in rows]
+        priorities = [r[1] for r in rows]
 
+        count_interview = statuses.count("Interview")
+        count_offer = statuses.count("Offer")
+        count_rejected = statuses.count("Rejected")
+        count_applied = statuses.count("Applied")
+        
+        # Analytics Calculations
+        response_rate = ((count_interview + count_offer) / total) * 100
+        
+        # Update Text Labels
+        self.lbl_total.config(text=f"Total: {total}")
+        self.lbl_active.config(text=f"Interviews: {count_interview}")
+        self.lbl_offers.config(text=f"Offers: {count_offer}")
+        self.lbl_rates.config(text=f"Response Rate: {response_rate:.1f}%")
+
+        # --- VISUALIZATION ---
         if self.canvas:
             self.canvas.get_tk_widget().destroy()
 
-        if total == 0:
-            lbl = ttk.Label(self.chart_frame, text="No data available.")
-            lbl.pack()
-            return
+        # Create 1 figure with 2 subplots (Side by Side)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), dpi=100)
+        fig.subplots_adjust(wspace=0.3)
 
-        status_counts = {}
-        for r in rows:
-            status_counts[r[0]] = status_counts.get(r[0], 0) + 1
+        # Chart 1: Status Distribution (Pie Chart)
+        labels = ["Applied", "Interview", "Offer", "Rejected"]
+        sizes = [count_applied, count_interview, count_offer, count_rejected]
+        colors = ['#95a5a6', '#3498db', '#2ecc71', '#e74c3c'] # Grey, Blue, Green, Red
         
-        statuses = list(status_counts.keys())
-        counts = list(status_counts.values())
+        # Filter out zero values for cleaner chart
+        clean_labels = []
+        clean_sizes = []
+        clean_colors = []
+        for i, size in enumerate(sizes):
+            if size > 0:
+                clean_labels.append(labels[i])
+                clean_sizes.append(size)
+                clean_colors.append(colors[i])
 
-        fig, ax = plt.subplots(figsize=(6, 4), dpi=100)
-        colors = ['#3498db', '#f1c40f', '#e74c3c', '#2ecc71']
-        bars = ax.bar(statuses, counts, color=colors[:len(statuses)])
+        ax1.pie(clean_sizes, labels=clean_labels, colors=clean_colors, autopct='%1.1f%%', startangle=140)
+        ax1.set_title("Status Distribution")
+
+        # Chart 2: Priority Distribution (Bar Chart)
+        priority_counts = {1:0, 2:0, 3:0, 4:0, 5:0}
+        for p in priorities:
+            if p in priority_counts:
+                priority_counts[p] += 1
         
-        ax.set_title("Application Funnel")
-        ax.set_ylabel("Count")
-        ax.grid(axis='y', linestyle='--', alpha=0.5)
+        p_x = list(priority_counts.keys())
+        p_y = list(priority_counts.values())
+        
+        ax2.bar(p_x, p_y, color='#f1c40f', edgecolor='grey')
+        ax2.set_title("Apps by Priority Level")
+        ax2.set_xlabel("Priority (Stars)")
+        ax2.set_ylabel("Count")
+        ax2.set_xticks([1, 2, 3, 4, 5])
+        ax2.grid(axis='y', linestyle='--', alpha=0.5)
 
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height,
-                    f'{int(height)}', ha='center', va='bottom')
-
+        # Draw
         self.canvas = FigureCanvasTkAgg(fig, master=self.chart_frame)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
 
     # -----------------------------------------------------------
-    # TAB 2: LIST VIEW (With Sorting)
+    # TAB 2: LIST VIEW
     # -----------------------------------------------------------
     def setup_list_view(self):
         controls_frame = ttk.Frame(self.tab_list)
@@ -248,9 +318,18 @@ class SolSearchApp(tk.Tk):
         columns = ("ID", "Company", "Role", "Date", "Status", "Priority")
         self.tree = ttk.Treeview(self.tab_list, columns=columns, show="headings", selectmode="browse")
         
-        for col in columns:
-            self.tree.heading(col, text=col)
-            self.tree.column(col, width=100 if col == "ID" else 150)
+        self.tree.heading("ID", text="ID")
+        self.tree.column("ID", width=50)
+        self.tree.heading("Company", text="Company")
+        self.tree.column("Company", width=200)
+        self.tree.heading("Role", text="Role")
+        self.tree.column("Role", width=200)
+        self.tree.heading("Date", text="Date")
+        self.tree.column("Date", width=100)
+        self.tree.heading("Status", text="Status")
+        self.tree.column("Status", width=100)
+        self.tree.heading("Priority", text="Priority")
+        self.tree.column("Priority", width=100)
 
         scrollbar = ttk.Scrollbar(self.tab_list, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscroll=scrollbar.set)
