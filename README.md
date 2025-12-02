@@ -9,16 +9,16 @@
   \__ \/ __ \/ /\__ \/ _ \/ __ `/ ___/ ___/ __ \   
  ___/ / /_/ / /___/ /  __/ /_/ / /  / /__/ / / /   
 /____/\____/_//____/\___/\__,_/_/   \___/_/ /_/    
-        :: Career Tracking System v1.0 ::          
+        :: Career Tracking System v2.0 ::          
   </pre>
 
-  <h3 align="center">SolSearch</h3>
+  <h3 align="center">SolSearch v2.0</h3>
 
   <p align="center">
-    The Professional, CLI-Based Job Application Tracker
+    A Professional, GUI-Based Job Application Tracker & Analytics Engine.
     <br />
     <br />
-    <a href="https://github.com/chiMsyt/FINALS_SOLSEARCH"><strong>Explore the docs »</strong></a>
+    <a href="implementations.md"><strong>View Roadmap (v3.0 & v4.0) »</strong></a>
     <br />
     <br />
     <a href="https://github.com/chiMsyt/FINALS_SOLSEARCH/issues">Report Bug</a>
@@ -30,10 +30,10 @@
 <!-- BADGES -->
 <div align="center">
 
-[![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)]()
-[![Database](https://img.shields.io/badge/SQLite-Integrated-07405E?logo=sqlite&logoColor=white)]()
-[![License](https://img.shields.io/badge/license-MIT-green)]()
+[![Status](https://img.shields.io/badge/Status-v2.0_Stable-success?style=flat&logo=git)]()
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=flat&logo=python&logoColor=white)]()
+[![GUI](https://img.shields.io/badge/Interface-Tkinter-orange?style=flat&logo=tcl&logoColor=white)]()
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat)]()
 
 </div>
 
@@ -58,8 +58,8 @@
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#data-analytics">Data Analytics</a></li>
+    <li><a href="#usage-guide">Usage Guide</a></li>
+    <li><a href="#development-roadmap">Roadmap</a></li>
     <li><a href="#contact">Contact</a></li>
   </ol>
 </details>
@@ -68,20 +68,21 @@
 
 ## 📖 About The Project
 
-**SolSearch** is a robust, terminal-based utility designed to help students and professionals organize the chaotic process of job hunting.
+**SolSearch** is a robust desktop utility designed to organize the chaotic process of job hunting.
 
-Managing 50+ job applications in spreadsheets is error-prone and tedious. SolSearch solves this by offering a **persistent database solution** that not only stores your application history but **analyzes it**. It provides actionable insights into your "Job Hunt Funnel," tracks your interest levels (Priority), and visualizes your progress with automatically generated charts.
+Managing hundreds of job applications in spreadsheets is error-prone and provides zero insight. SolSearch solves this by offering a **persistent database solution** wrapped in a user-friendly GUI. It not only stores your application history but **analyzes it** in real-time, visualizing your "Job Hunt Funnel" and priority distribution.
 
-It was built as a final capstone project for **DSA 214**, demonstrating core software engineering principles:
-*   **Modularity** (Separation of Concerns)
-*   **Security** (SQL Injection Prevention)
-*   **Data Persistence** (Local Database)
+This project serves as a final capstone for **DSA 214**, demonstrating:
+*   **Object-Oriented Design:** Modular `DatabaseManager` and `UserInterface` classes.
+*   **Data Persistence:** SQLite integration for reliable local storage.
+*   **Data Visualization:** Embedded Matplotlib charts within a Tkinter window.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### 🔧 Built With
 
 *   ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+*   ![Tkinter](https://img.shields.io/badge/Tkinter-GUI-orange?style=for-the-badge)
 *   ![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
 *   ![Matplotlib](https://img.shields.io/badge/Matplotlib-%23ffffff.svg?style=for-the-badge&logo=Matplotlib&logoColor=black)
 
@@ -91,22 +92,23 @@ It was built as a final capstone project for **DSA 214**, demonstrating core sof
 
 ## ✨ Key Features
 
-### 🔐 Secure Architecture
-*   **Local Persistence:** Uses `SQLite3` to store data locally. No internet required.
-*   **Security First:** Strict adherence to **Parameterized Queries** to prevent SQL Injection attacks.
+### 🖥️ The v2.0 Dashboard
+*   **Real-Time Metrics:** Instantly calculate Total Applications, Active Interviews, Offers, and Response Rates.
+*   **Embedded Analytics:**
+    *   **Pie Chart:** Visualizes the status breakdown (Applied vs. Rejected vs. Offer).
+    *   **Bar Chart:** Analyzes your "Priority Alignment" (Are you applying to jobs you actually want?).
 
-### 📊 Analytics Engine
-*   **Funnel Reports:** Calculates conversion rates (Application &rarr; Interview &rarr; Offer).
-*   **Descriptive Stats:** Calculates Mean/Median priority scores to measure application quality.
-*   **Visualization:** Auto-generates `.png` Bar Charts for visual reporting.
+### 🗂️ Application Management
+*   **List View:** A sortable table of all applications.
+*   **CRUD Actions:**
+    *   **Update:** Move candidates through the pipeline (e.g., `Applied` &rarr; `Interview`).
+    *   **Delete:** Remove erroneous entries safely.
+*   **Dynamic Sorting:** Sort by Company (A-Z), Status, ID, or Priority.
 
-### 🖥️ Robust Interface
-*   **Dynamic Sorting:** Sort history by ID, Company, Status, or Priority.
-*   **Smart Formatting:** Automatic text truncation ensures tables never break layout.
-*   **Visual Ratings:** Converts integer priorities into Star Ratings (⭐⭐⭐⭐⭐).
-
-### 💾 Data Portability
-*   **CSV Export:** One-click export to migrate data to Excel or Google Sheets.
+### 💾 Data & Security
+*   **Local Persistence:** Zero-latency SQLite database. No internet connection required.
+*   **CSV Export:** One-click backup to migrate data to Excel/Google Sheets.
+*   **Safety:** Parameterized SQL queries prevent injection attacks.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -134,6 +136,7 @@ To get a local copy up and running, follow these simple steps.
     ```sh
     pip install matplotlib
     ```
+    *(Note: `tkinter` and `sqlite3` are included with standard Python installations)*
 4.  **Run the App**
     ```sh
     python main.py
@@ -143,44 +146,36 @@ To get a local copy up and running, follow these simple steps.
 
 ---
 
-## 🎮 Usage
+## 🎮 Usage Guide
 
-### Generating Test Data
-To demo the analytics without typing 50 entries manually, run the included seeder script.
+### 1. Generating Test Data
+Don't want to type empty data? Run the seeder to populate the database with **1,000 realistic entries** from top companies (Google, Amazon, startups, etc.).
 ```sh
 python seed_data.py
 ```
-> *Prompts you to wipe the DB and generates 50-100 realistic, weighted job entries.*
 
-### Menu Controls
+### 2. The Interface
+The application is divided into three main tabs:
 
-| Option | Action | Description |
-| :--- | :--- | :--- |
-| **1** | `Add` | Log a new job entry. |
-| **2** | `View` | View history table. **Sortable** by ID, Status, or Priority. |
-| **3** | `Update` | Move a job from 'Applied' to 'Interview', etc. |
-| **4** | `Delete` | Remove an application by ID. |
-| **5** | `Analyze` | View statistics and generate charts. |
-| **6** | `Export` | Save database to `.csv` file. |
+| Tab Name        | Functionality                                                                                      |
+| :-------------- | :------------------------------------------------------------------------------------------------- |
+| **📊 Dashboard** | View global statistics, Response Rate %, and Matplotlib charts.                                    |
+| **📂 List View** | The main table. Click column headers to **Sort**. Select a row to **Update Status** or **Delete**. |
+| **➕ Add New**   | Form to log a new application. Includes Priority Slider (1-5) and Date entry.                      |
+
+### 3. Exporting
+Click the **`[V] EXPORT CSV`** button in the top header to save your entire database to a `.csv` file for external analysis.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
 
-## 📈 Data Analytics
+## 🗺️ Development Roadmap
 
-SolSearch includes a dedicated `AnalyticsEngine` that transforms raw rows into insight.
+We are currently planning **v3.0** and **v4.0**. Full details can be found in [implementations.md](implementations.md).
 
-**1. The Funnel Report**
-> Automatically groups your applications to show where you stand.
-> *   *Example: Applied (60%), Rejected (30%), Interview (10%)*
-
-**2. Priority Alignment**
-> Calculates the Median priority of your applications.
-> *   *Insight: Are you applying for jobs you actually want?*
-
-**3. Automatic Visualization**
-> The system uses `matplotlib` to save a distribution chart to your project folder (`solsearch_analytics.png`).
+*   **v3.0:** Dark Mode (`ttkbootstrap`), Search Bar, Salary Filtering, Resume Versioning.
+*   **v4.0:** AI Resume Optimization, Kanban Boards, and Google Calendar Sync.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
