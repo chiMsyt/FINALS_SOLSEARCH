@@ -11,43 +11,108 @@ from datetime import datetime, timedelta
 DB_NAME = "solsearch.db"
 NUM_ENTRIES = 1000  
 
-# Expanded Data Pools
+# Expanded Data Pools - Focused on Tech/IT Ecosystems
 COMPANIES = [
-    # Big Tech
+    # --- MAANG / Big Tech ---
     "Google", "Amazon", "Microsoft", "Apple", "Meta", "Netflix", "Tesla", "NVIDIA",
-    # Fintech / Finance
-    "Stripe", "PayPal", "Square", "Goldman Sachs", "JP Morgan", "Morgan Stanley", 
-    "BlackRock", "Citadel", "Jane Street", "Coinbase", "Robinhood",
-    # Enterprise / Cloud
-    "Salesforce", "Oracle", "SAP", "Snowflake", "Datadog", "Atlassian", "ServiceNow",
-    "IBM", "Intel", "AMD", "Cisco",
-    # Startups / Unicorns
-    "OpenAI", "Anthropic", "SpaceX", "Discord", "Notion", "Figma", "Canva", 
-    "Airbnb", "Uber", "Lyft", "DoorDash", "Instacart", "Plaid",
-    # Traditional / Retail / Other
-    "Walmart", "Target", "Costco", "Nike", "Adidas", "Ford", "GM", "Boeing",
-    "Lockheed Martin", "McKinsey", "BCG", "Bain", "Deloitte", "PwC",
-    "The New York Times", "Disney", "Hulu", "Spotify", "Epic Games"
+    
+    # --- Enterprise Software / SaaS ---
+    "Salesforce", "Oracle", "SAP", "ServiceNow", "Workday", "Adobe", "Intuit", 
+    "Atlassian", "Autodesk", "VMware", "Red Hat", "Twilio", "Zoom", "Slack",
+    "DocuSign", "Dropbox", "Box", "HubSpot", "Zendesk", "Asana", "Monday.com",
+    
+    # --- Cloud & Infrastructure ---
+    "Snowflake", "Datadog", "HashiCorp", "GitLab", "GitHub", "Cloudflare", 
+    "Akamai", "Fastly", "DigitalOcean", "Heroku", "MongoDB", "Elastic", "Confluent",
+    "Splunk", "New Relic", "Dynatrace",
+    
+    # --- Cybersecurity ---
+    "Palo Alto Networks", "CrowdStrike", "Fortinet", "Zscaler", "Okta", "SentinelOne",
+    "Rapid7", "Tenable", "CyberArk", "Proofpoint", "Darktrace", "Check Point",
+    
+    # --- Fintech / Crypto / Payments ---
+    "Stripe", "PayPal", "Square", "Block", "Coinbase", "Robinhood", "Plaid", "Affirm",
+    "SoFi", "Chime", "Brex", "Klarna", "Wise", "Revolut", "Nubank", "Monzo",
+    "Visa", "Mastercard", "American Express", "Fidelity", "Capital One",
+    
+    # --- Hardware / Semiconductors ---
+    "Intel", "AMD", "Qualcomm", "Broadcom", "TSMC", "Micron", "Texas Instruments",
+    "Samsung", "Dell", "HP", "Lenovo", "IBM", "Cisco", "Juniper Networks", "Arista",
+    
+    # --- Gaming / Interactive ---
+    "Epic Games", "Unity", "Roblox", "Electronic Arts", "Activision Blizzard", 
+    "Ubisoft", "Take-Two Interactive", "Sony PlayStation", "Nintendo", "Riot Games",
+    "Twitch", "Discord",
+    
+    # --- AI / Data / Startups ---
+    "OpenAI", "Anthropic", "Databricks", "Scale AI", "Hugging Face", "Midjourney",
+    "Jasper", "Stability AI", "Palantir", "C3.ai",
+    
+    # --- E-commerce / Gig Economy / Travel ---
+    "Uber", "Lyft", "Airbnb", "DoorDash", "Instacart", "Booking.com", "Expedia",
+    "Shopify", "Etsy", "Wayfair", "Chewy", "Zillow", "Redfin",
+    
+    # --- Streaming / Media Tech ---
+    "Spotify", "Hulu", "Disney+", "HBO Max", "Roku", "Sonos", "Vimeo",
+    
+    # --- Tech Consulting (IT Services) ---
+    "Accenture", "Capgemini", "Infosys", "Tata Consultancy Services", "Cognizant",
+    "Wipro", "Thoughtworks", "EPAM Systems"
 ]
 
 ROLES = [
-    # Software Engineering
-    "Software Engineer I", "Software Engineer II", "Senior Software Engineer",
-    "Frontend Developer", "Backend Developer", "Full Stack Developer",
-    "DevOps Engineer", "Site Reliability Engineer (SRE)", "Mobile Developer (iOS)",
-    "Mobile Developer (Android)", "Embedded Systems Engineer",
-    # Data & AI
-    "Data Scientist", "Data Analyst", "Machine Learning Engineer",
-    "AI Research Scientist", "Data Engineer", "Business Intelligence Analyst",
-    # Product & Design
-    "Product Manager", "Associate Product Manager", "Technical Product Manager",
-    "UI/UX Designer", "Product Designer", "User Researcher",
-    # IT & Cyber
-    "IT Support Specialist", "System Administrator", "Cybersecurity Analyst",
-    "Network Engineer", "Cloud Architect",
-    # Business / Other
-    "Technical Program Manager", "Solutions Architect", "Sales Engineer",
-    "Developer Advocate", "QA Engineer", "Technical Writer"
+    # --- Software Engineering (General) ---
+    "Software Engineer Intern", "Junior Software Engineer", "Software Engineer I", 
+    "Software Engineer II", "Senior Software Engineer", "Staff Software Engineer",
+    "Principal Software Engineer", "Distinguished Engineer", "Engineering Manager",
+    
+    # --- Frontend / Web ---
+    "Frontend Developer", "Senior Frontend Engineer", "UI Engineer", 
+    "React Developer", "Vue.js Developer", "Angular Developer", 
+    "Web Developer", "Creative Technologist",
+    
+    # --- Backend / API ---
+    "Backend Developer", "Senior Backend Engineer", "API Developer", 
+    "Java Developer", "Python Developer", "Go Developer", "Node.js Developer",
+    "C++ Developer", "Rust Engineer",
+    
+    # --- Full Stack ---
+    "Full Stack Developer", "Senior Full Stack Engineer", "MERN Stack Developer",
+    
+    # --- Mobile ---
+    "iOS Developer", "Android Developer", "Mobile Engineer", 
+    "React Native Developer", "Flutter Developer",
+    
+    # --- Data & AI ---
+    "Data Scientist", "Senior Data Scientist", "Data Analyst", 
+    "Machine Learning Engineer", "AI Research Scientist", "Computer Vision Engineer",
+    "NLP Engineer", "Big Data Engineer", "ETL Developer", "Data Architect",
+    
+    # --- Infrastructure / Cloud / DevOps ---
+    "DevOps Engineer", "Site Reliability Engineer (SRE)", "Cloud Architect", 
+    "Cloud Engineer (AWS)", "Cloud Engineer (Azure)", "Platform Engineer", 
+    "Kubernetes Administrator", "Infrastructure Engineer", "Systems Engineer",
+    
+    # --- Cybersecurity ---
+    "Cybersecurity Analyst", "Information Security Manager", "Penetration Tester",
+    "Security Engineer", "Application Security Engineer", "SOC Analyst", 
+    "Identity & Access Management Specialist", "Network Security Engineer",
+    
+    # --- Database ---
+    "Database Administrator (DBA)", "SQL Developer", "Data Warehouse Architect",
+    
+    # --- Network / IT Support ---
+    "Network Engineer", "Network Administrator", "System Administrator", 
+    "IT Support Specialist", "Help Desk Technician", "IT Director",
+    
+    # --- Quality Assurance / Testing ---
+    "QA Engineer", "SDET (Software Development Engineer in Test)", 
+    "Automation Engineer", "Manual Tester",
+    
+    # --- Specialized Tech ---
+    "Blockchain Developer", "Smart Contract Engineer", "Game Developer", 
+    "Unity Developer", "Unreal Engine Developer", "Embedded Systems Engineer", 
+    "Firmware Engineer", "IoT Engineer", "AR/VR Developer"
 ]
 
 STATUSES = ["Applied", "Interview", "Rejected", "Offer"]
@@ -131,4 +196,4 @@ if __name__ == "__main__":
         wipe_database()
     
     generate_data()
-    print(f"\nSeed complete. Run 'python gui_app.py' to view {NUM_ENTRIES} records.")
+    print(f"\nSeed complete. Run 'python main.py' to view {NUM_ENTRIES} records.")
