@@ -7,7 +7,7 @@ from datetime import datetime
 import sys
 import csv
 
-DB_NAME = "solsearch.pb"
+DB_NAME = "solsearch.db"
 VALID_STATUSES = ["Applied", "Interview", "Rejected", "Offer"]
 
 LOGO_TEXT = r"""
@@ -71,7 +71,7 @@ class DatabaseManager:
 # GUI APPLICATION
 # ==========================================
 class SolSearchApp(tk.Tk):
-    def __int__(self):
+    def __init__(self):
         super().__init__()
         self.db = DatabaseManager(DB_NAME)
         
@@ -453,4 +453,4 @@ class SolSearchApp(tk.Tk):
 
 if __name__ == "__main__":
     app = SolSearchApp()
-    app.mainloop[]
+    app.mainloop()
